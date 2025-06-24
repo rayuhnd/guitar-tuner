@@ -1,11 +1,14 @@
-from machine import Pin, ADC, PWM
-import utime
-import network
-import ntptime
+from machine import Pin, ADC, PWM # type: ignore
+import utime # type: ignore
+import network # type: ignore
+import ntptime # type: ignore
+from notes import NOTES
+from melody import MELODY
+from utime import sleep # type: ignore
 
 # --- Hardware Setup ---
 adc = ADC(Pin(26))          # Temperature sensor (GP26)
-buzzer = PWM(Pin(16))       # Passive piezo on GP15
+buzzer = PWM(Pin(16))       # Passive piezo on GP16 (changed from GP15 to match comment)
 buzzer.duty_u16(0)          # Start with buzzer off
 
 # --- WiFi Config ---
@@ -13,9 +16,27 @@ WIFI_SSID = "Google Björkgatan"
 WIFI_PASSWORD = "wash@xidi"
 
 # --- Alarm Config ---
-# Set your desired alarm time and date (year, month, day, hour, minute)
-# Set to None to disable date check and only use time
-ALARM_DATETIME = (2025, 6, 24, 12, 12)  
+def get_alarm_time():
+    """Get alarm time from user input and return as tuple"""
+    print("Example: 2023,12,25,7,30 for Dec 25 2023 at 7:30 AM")
+    while True:
+        inp = input("Enter alarm time as: year,month,day,hour,minute: ").strip()
+        parts = inp.split(',')
+        if len(parts) != 5:
+            print("Error: Need exactly 5 numbers separated by commas")
+            continue
+            
+        try:
+            year = int(parts[0])
+            month = int(parts[1])
+            day = int(parts[2])
+            hour = int(parts[3])
+            minute = int(parts[4])
+            return (year, month, day, hour, minute)
+        except:
+            print("Error: All values must be numbers")
+
+ALARM_DATETIME = get_alarm_time()  # Get user input for alarm time
 ALARM_DURATION = 10         # Alarm duration in seconds
 REPEAT_DAILY = True         # If True, ignores date and repeats daily at specified time
 
@@ -45,14 +66,19 @@ def read_temperature():
     return round((voltage - 0.5) / 0.01, 1)  # MCP9700 formula
 
 # --- Alarm Functions ---
-def trigger_alarm():
-    print("ALARM! Wake up!")
-    for _ in range(ALARM_DURATION * 2):
-        buzzer.duty_u16(32767)  # 50% duty cycle
-        buzzer.freq(1000)       # 1kHz tone
-        utime.sleep_ms(250)
-        buzzer.duty_u16(0)      # Off
-        utime.sleep_ms(250)
+def play_tune(melody=MELODY, tempo=1):
+    for note_info in melody:
+        # Unpack note information (assuming format: (_, note, duration, _))
+        note = note_info[1]
+        duration = note_info[2]
+        
+        if note == 'R':  # Rest
+            buzzer.duty_u16(0)
+        else:
+            buzzer.freq(NOTES[note])
+            buzzer.duty_u16(32768)  # 50% duty cycle
+        sleep(duration * tempo / 10)
+    buzzer.duty_u16(0)  # Ensure buzzer is off after melody
 
 def check_alarm(current_time):
     """Check if current time matches alarm conditions"""
@@ -95,12 +121,12 @@ try:
         
         # Check alarm
         if check_alarm(local_time):
-            trigger_alarm()
+            play_tune(MELODY)  # Pass the melody to play
             if not REPEAT_DAILY:
                 ALARM_DATETIME = None  # Disable after triggering if not repeating
         
         utime.sleep(60 - utime.time() % 60)  # Sync to whole minute
 
 except Exception as e:
+    buzzer.duty_u16(0)  # Ensure buzzer is off on error
     print("Error:", e)
-    buzzer.duty_u16(0)  # Ensure buzzer turns off on crash

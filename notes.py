@@ -1,6 +1,4 @@
 # Accurate “nyan cat” melody (intro bars)
-
-
 NOTES = {
   'C0':16,
   'C#0':17,

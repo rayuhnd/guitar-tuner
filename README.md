@@ -17,7 +17,7 @@ Below is a table of the main components used in the project.
 | -------------------- | --------------------------------------------------------------------------- | ------- |
 | Raspberry Pi Pico WH | [Electrokit](https://www.electrokit.com/raspberry-pi-pico-wh)               | 109 SEK |
 | DHT11                | [Electrokit](https://www.electrokit.com/temp/fuktsensor-dht11)              | 39 SEK  |
-| Piezo                | [Electrokit](https://www.electrokit.com/piezoelement-20mm-med-sladd)              | 22 SEK  |
+| Piezo Passive                | [Electrokit](https://www.electrokit.com/en/piezohogtalare-passiv)              | 29 SEK  |
 | RGB LED              | [Electrokit](https://www.electrokit.com/led-rgb-5mm-adresserbar-ws2812d-f5) | 5 SEK   |
 
 In addition, you need a breadboard, resistors, jumper wires and a USB-A to micro USB cable. These can all be bought at Electrokit. An example of what resistors and wires needed and how they can be connected will be provided later on in [Putting Everything Together](#putting-everything-together).

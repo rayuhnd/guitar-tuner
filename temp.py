@@ -1,13 +1,13 @@
-from machine import Pin, ADC, PWM, I2C
-import utime
-import network
-import ntptime
+from machine import Pin, ADC, PWM, I2C # type: ignore
+import utime # type: ignore
+import network # type: ignore
+import ntptime # type: ignore
 from notes import NOTES
 from melody import MELODY
-from utime import sleep
-import ujson
-import urequests
-import framebuf
+from utime import sleep # type: ignore
+import ujson # type: ignore
+import urequests # type: ignore
+import framebuf # type: ignore
 
 # ===== WORKING SH1107 DRIVER =====
 class SH1107:

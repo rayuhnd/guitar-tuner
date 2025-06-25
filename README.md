@@ -1,4 +1,4 @@
-# Guitar Tuner
+# Temparm
 
 Ryan Shi Ding / rs223re
 
@@ -16,9 +16,9 @@ Below is a table of the main components used in the project.
 | Component            | Link                                                                        | Price   |
 | -------------------- | --------------------------------------------------------------------------- | ------- |
 | Raspberry Pi Pico WH | [Electrokit](https://www.electrokit.com/raspberry-pi-pico-wh)               | 109 SEK |
-| DHT11                | [Electrokit](https://www.electrokit.com/temp/fuktsensor-dht11)              | 39 SEK  |
+| MCP9700 TO-92               | [Electrokit](https://www.electrokit.com/mcp9700-to-92-temperaturgivare?gad_source=1&gad_campaignid=17338847491&gbraid=0AAAAAD_OrGNVjk827G_EDet_YsCZFAE5W&gclid=CjwKCAjwvO7CBhAqEiwA9q2YJTqGdhBQr3nU6UT9RJ0cV_tGOv7GdNxxB1XIwgphQOhjolyTOitV6RoCvdQQAvD_BwE)              | 10.50 SEK  |
 | Piezo Passive                | [Electrokit](https://www.electrokit.com/en/piezohogtalare-passiv)              | 29 SEK  |
-| RGB LED              | [Electrokit](https://www.electrokit.com/led-rgb-5mm-adresserbar-ws2812d-f5) | 5 SEK   |
+| OLED Screen 128x128              | [AliExpress](https://www.aliexpress.com/item/4000049991220.html?spm=a2g0o.order_list.order_list_main.5.6e371802oR5fy5#nav-review) | 62 SEK   |
 
 In addition, you need a breadboard, resistors, jumper wires and a USB-A to micro USB cable. These can all be bought at Electrokit. An example of what resistors and wires needed and how they can be connected will be provided later on in [Putting Everything Together](#putting-everything-together).
 
@@ -28,23 +28,23 @@ The Raspberry Pi Pico WH is the microcontroller used in the project. It has a mi
 
 <img src="https://github.com/gnowin/iot-project/assets/100692493/f471fdd4-94a1-4c5e-bd69-ecc444c994b7" alt="pico" style="width:50%;"/>
 
-### DHT11
+### MCP9700 TO-92
 
 A sensor that measures both humidity and temperature.
 
-<img src="https://github.com/gnowin/iot-project/assets/100692493/8af396f4-aee0-4e85-ad96-587265f504fc" alt="dht11" style="width:50%;"/>
+<img src="https://github.com/rayuhnd/temp-alarm/blob/main/tempgivare.jpg?raw=true" alt="dht11" style="width:50%;"/>
 
-### Piezo
+### Piezo Passive
 
 A piezo can detect vibrations and make noises.
 
-<img src="https://github.com/gnowin/iot-project/assets/100692493/4f787bc6-96eb-4d2e-aee0-624b47ec20e8" alt="piezo" style="width:50%;"/>
+<img src="https://raw.githubusercontent.com/rayuhnd/temp-alarm/refs/heads/main/passive%20piezo.webp" alt="piezo" style="width:50%;"/>
 
-### RGB LED
+### OLED Screen 128x128
 
 An LED that can display a multitude of colors. It has one pin for power, and three pins that correspond to the intensity of the red, green and blue color channels to light up in different colors.
 
-<img src="https://github.com/gnowin/iot-project/assets/100692493/275643b6-6dea-4d1e-8785-101b64a72f7f" alt="rgbled" style="width:50%;"/>
+<img src="https://raw.githubusercontent.com/rayuhnd/temp-alarm/refs/heads/main/oled.webp" alt="rgbled" style="width:50%;"/>
 
 ## Computer setup
 

@@ -9,202 +9,148 @@ import ujson
 import urequests
 import framebuf
 
-# SH1107 display commands
-_SET_CONTRAST        = 0x81
-_SET_ENTIRE_ON       = 0xA4
-_SET_NORM_INV        = 0xA6
-_SET_DISP            = 0xAE
-_SET_MEM_ADDR        = 0x20
-_SET_COL_ADDR        = 0x21
-_SET_PAGE_ADDR       = 0x22
-_SET_DISP_START_LINE = 0x40
-_SET_SEG_REMAP       = 0xA0
-_SET_MUX_RATIO       = 0xA8
-_SET_COM_OUT_DIR     = 0xC0
-_SET_DISP_OFFSET     = 0xD3
-_SET_COM_PIN_CFG     = 0xDA
-_SET_DISP_CLK_DIV    = 0xD5
-_SET_PRECHARGE       = 0xD9
-_SET_VCOM_DESEL      = 0xDB
-_SET_CHARGE_PUMP     = 0x8D
-
-class SH1107(framebuf.FrameBuffer):
-    def __init__(self, width, height, i2c, addr=0x3C, external_vcc=False):
+# ===== WORKING SH1107 DRIVER =====
+class SH1107:
+    def __init__(self, width=128, height=128, i2c=None, addr=0x3C):
         self.width = width
         self.height = height
-        self.external_vcc = external_vcc
         self.pages = height // 8
-        self.buffer = bytearray(self.pages * width)
-        super().__init__(self.buffer, width, height, framebuf.MONO_VLSB)
-        self.i2c = i2c
         self.addr = addr
-        self.init_display()
-    
-    def init_display(self):
-        for cmd in (
-            _SET_DISP | 0x00,  # Display off
-            _SET_MEM_ADDR, 0x00,  # Horizontal addressing mode
-            _SET_DISP_START_LINE | 0x00,
-            _SET_SEG_REMAP | 0x01,  # Column 127 mapped to SEG0
-            _SET_MUX_RATIO, self.height - 1,
-            _SET_COM_OUT_DIR | 0x08,  # Scan from COM[N-1] to COM0
-            _SET_DISP_OFFSET, 0x00,
-            _SET_COM_PIN_CFG, 0x12 if self.height == 128 else 0x02,
-            _SET_DISP_CLK_DIV, 0x80,
-            _SET_PRECHARGE, 0x22 if self.external_vcc else 0xF1,
-            _SET_VCOM_DESEL, 0x30,  # 0.83*Vcc
-            _SET_CONTRAST, 0xFF,  # Maximum contrast
-            _SET_ENTIRE_ON,  # Output follows RAM contents
-            _SET_NORM_INV,  # Non-inverted display
-            _SET_CHARGE_PUMP, 0x10 if self.external_vcc else 0x14,
-            _SET_DISP | 0x01):  # Display on
+        self.i2c = i2c
+        self.buffer = bytearray(self.pages * width)
+        self.framebuf = framebuf.FrameBuffer(self.buffer, width, height, framebuf.MONO_VLSB)
+        
+        # Initialize display
+        self.init_cmds = bytes([
+            0xAE, 0x00, 0x10, 0x40, 0x81, 0xCF, 0xA1, 0xC8,
+            0xA6, 0xA8, 0x3F, 0xD3, 0x00, 0xD5, 0x80, 0xD9,
+            0xF1, 0xDA, 0x12, 0xDB, 0x40, 0x20, 0x00, 0x8D,
+            0x14, 0xA4, 0xA6, 0xAF
+        ])
+        for cmd in self.init_cmds:
             self.write_cmd(cmd)
         self.fill(0)
         self.show()
-    
+
     def write_cmd(self, cmd):
-        self.i2c.writeto(self.addr, bytearray([0x00, cmd]))
-    
+        self.i2c.writeto(self.addr, bytes([0x00, cmd]))
+
     def write_data(self, buf):
         self.i2c.writeto(self.addr, b'\x40' + buf)
-    
+
+    def fill(self, color):
+        self.framebuf.fill(color)
+
+    def text(self, text, x, y, color=1):
+        self.framebuf.text(text, x, y, color)
+
     def show(self):
         for page in range(self.pages):
-            self.write_cmd(_SET_PAGE_ADDR)
-            self.write_cmd(page)
-            self.write_cmd(_SET_COL_ADDR)
-            self.write_cmd(0)
-            self.write_cmd(self.width - 1)
+            self.write_cmd(0xB0 + page)
+            self.write_cmd(0x00)
+            self.write_cmd(0x10)
             self.write_data(self.buffer[page * self.width:(page + 1) * self.width])
-    
-    def set_contrast(self, contrast):
-        self.write_cmd(_SET_CONTRAST)
-        self.write_cmd(contrast)
 
-# Initialize I2C with proper pins
+# ===== HARDWARE SETUP =====
 i2c = I2C(0, scl=Pin(17), sda=Pin(16), freq=400000)
-oled = SH1107(128, 128, i2c)
-oled.set_contrast(255)  # Use the new set_contrast method
+oled = SH1107(128, 128, i2c)  # Initialize display
 
-# Hardware Setup
-adc = ADC(Pin(26))  # Temperature sensor (GP26)
+adc = ADC(Pin(26))  # Temperature sensor
 buzzer = PWM(Pin(18))       
 buzzer.duty_u16(0)  # Start with buzzer off
 
-# WiFi Config
+# ===== NETWORK CONFIG =====
 WIFI_SSID = "Google Björkgatan"
 WIFI_PASSWORD = "wash@xidi"
-
-# Ubidots Config
 UBIDOTS_TOKEN = "BBUS-BfEl1dInwuzIz8Ir5s9b3TFBg0VI1R"
 DEVICE_LABEL = "raspberrypi"
 VARIABLE_LABEL = "new-variable-2"
 
-# Global variables
+# ===== GLOBAL VARIABLES =====
 ALARM_DATETIME = None
 REPEAT_DAILY = False
 TEMPO = 1.0
 last_alarm_trigger = None
 
-# HTTP Functions
+# ===== HTTP FUNCTIONS =====
 def send_http_to_ubidots(value):
-    url = "http://industrial.api.ubidots.com/api/v1.6/devices/{}".format(DEVICE_LABEL)
-    headers = {
-        "X-Auth-Token": UBIDOTS_TOKEN,
-        "Content-Type": "application/json"
-    }
+    url = f"http://industrial.api.ubidots.com/api/v1.6/devices/{DEVICE_LABEL}"
+    headers = {"X-Auth-Token": UBIDOTS_TOKEN, "Content-Type": "application/json"}
     data = {VARIABLE_LABEL: value}
     
     try:
         response = urequests.post(url, json=data, headers=headers)
         if response.status_code == 200:
-            print("HTTP Sent {} Degrees Celsius to Ubidots".format(value))
+            print(f"HTTP Sent {value}°C to Ubidots")
         else:
-            print("HTTP Error {}: {}".format(response.status_code, response.text))
+            print(f"HTTP Error {response.status_code}: {response.text}")
         response.close()
         return response.status_code == 200
     except Exception as e:
-        print("! HTTP Request Failed:", e)
+        print("HTTP Request Failed:", e)
         return False
 
 def test_http_connection():
-    print("\n=== Testing HTTP Connection ===")
-    test_value = 25.5
-    print("Attempting to send test value:", test_value)
-    if send_http_to_ubidots(test_value):
+    print("\nTesting HTTP Connection...")
+    if send_http_to_ubidots(25.5):
         print("✓ HTTP Test Successful")
         return True
     else:
-        print("! HTTP Test Failed")
+        print("✗ HTTP Test Failed")
         return False
 
-# Alarm Config
+# ===== ALARM CONFIG =====
 def get_alarm_time():
-    """Get alarm time from user input and return as tuple"""
+    """Get alarm time from user input"""
     global ALARM_DATETIME, REPEAT_DAILY, TEMPO
     print("Example: 2023,12,25,7,30 for Dec 25 2023 at 7:30 AM")
+    
     while True:
         try:
-            # Get alarm time
-            inp = input("Enter alarm time as: year,month,day,hour,minute: ")
-            parts = inp.split(",")
-            year = int(parts[0])
-            month = int(parts[1])
-            day = int(parts[2])
-            hour = int(parts[3])
-            minute = int(parts[4])
+            inp = input("Enter alarm time (year,month,day,hour,minute): ")
+            year, month, day, hour, minute = map(int, inp.split(','))
             
-            # Get repeat preference
-            while True:
-                repeat_input = input("Repeat daily? (True/False): ").strip().lower()
-                if repeat_input in ['true', 'false']:
-                    REPEAT_DAILY = repeat_input == 'true'
-                    break
-                print("Please enter exactly 'True' or 'False'")
+            REPEAT_DAILY = input("Repeat daily? (y/n): ").lower() == 'y'
             
-            # Get tempo
             while True:
                 try:
-                    TEMPO = float(input("Enter tempo (0.1-1.0 where 1.0 is normal speed): "))
-                    if 0.1 <= TEMPO <= 1.0:
-                        break
-                    print("Please enter a value between 0.1 and 1.0")
+                    TEMPO = float(input("Tempo (0.1-1.0, 1.0=normal): "))
+                    if 0.1 <= TEMPO <= 1.0: break
+                    print("Please enter 0.1 to 1.0")
                 except ValueError:
-                    print("Please enter a number")
+                    print("Enter a number")
             
             return (year, month, day, hour, minute), REPEAT_DAILY, TEMPO
             
         except (ValueError, IndexError):
-            print("Error: Please enter exactly 5 numbers separated by commas")
+            print("Error: Enter exactly 5 numbers separated by commas")
 
-# Get alarm settings
-ALARM_DATETIME, REPEAT_DAILY, TEMPO = get_alarm_time()
-
-# Timezone/DST for Sweden
+# ===== TIME FUNCTIONS =====
 def is_summer_time(now):
+    """Check if DST is active (Sweden)"""
     year, month = now[0], now[1]
-    if 3 < month < 10:
-        return True
-    if month == 3 and now[2] >= (31 - (5 * year + 4) // 7 % 7):
-        return True
-    if month == 10 and now[2] < (31 - (5 * year + 1) // 7 % 7):
-        return True
+    if 3 < month < 10: return True
+    if month == 3 and now[2] >= (31 - (5 * year + 4) // 7 % 7): return True
+    if month == 10 and now[2] < (31 - (5 * year + 1) // 7 % 7): return True
     return False
 
 def get_local_time():
+    """Get local time with DST adjustment"""
     now_utc = utime.localtime()
-    offset = 2 if is_summer_time(now_utc) else 1
+    offset = 2 if is_summer_time(now_utc) else 1  # CEST or CET
     adjusted = utime.mktime(now_utc) + offset * 3600
     return utime.localtime(adjusted)
 
-# Temperature Sensor
+# ===== SENSOR FUNCTIONS =====
 def read_temperature():
+    """Read temperature from ADC"""
     adc_value = adc.read_u16()
     voltage = (adc_value / 65535) * 3.3
     return round((voltage - 0.5) / 0.01, 1)
 
-# Alarm Functions
+# ===== ALARM FUNCTIONS =====
 def play_tune(melody, tempo):
+    """Play melody with adjustable tempo"""
     for note_info in melody:
         note = note_info[1]
         duration = note_info[2]
@@ -218,7 +164,8 @@ def play_tune(melody, tempo):
     buzzer.duty_u16(0)
 
 def check_alarm(current_time):
-    global last_alarm_trigger, ALARM_DATETIME
+    """Check if alarm should trigger"""
+    global last_alarm_trigger
     
     if ALARM_DATETIME is None:
         return False
@@ -236,9 +183,10 @@ def check_alarm(current_time):
     if alarm_triggered:
         last_alarm_trigger = current_minute
         temp = read_temperature()
-        print(f"\nALARM! Date: {current_time[0]}-{current_time[1]:02d}-{current_time[2]:02d}")
-        print(f"Time: {current_time[3]:02d}:{current_time[4]:02d} | Temperature indoor is: {temp} Degrees Celsius.")
-    return alarm_triggered
+        print(f"\nALARM! {current_time[0]}-{current_time[1]:02d}-{current_time[2]:02d}")
+        print(f"Time: {current_time[3]:02d}:{current_time[4]:02d} | Temp: {temp}°C")
+        return True
+    return False
 
 # WiFi Connection
 def connect_wifi():
@@ -251,47 +199,62 @@ def connect_wifi():
         utime.sleep(1)
     raise RuntimeError("WiFi failed")
 
-# Display Function
+# ===== DISPLAY FUNCTION =====
 def display_clock():
+    """Update OLED display with time, date, temp, and alarm status"""
     local_time = get_local_time()
     temp = read_temperature()
     
     oled.fill(0)
     
     # Time (HH:MM:SS)
-    time_str = "{:02d}:{:02d}:{:02d}".format(local_time[3], local_time[4], local_time[5])
-    oled.text(time_str, 10, 30, 1)
+    oled.text(f"{local_time[3]:02d}:{local_time[4]:02d}:{local_time[5]:02d}", 10, 30, 1)
     
     # Date (YYYY-MM-DD)
-    date_str = "{:04d}-{:02d}-{:02d}".format(local_time[0], local_time[1], local_time[2])
-    oled.text(date_str, 10, 50, 1)
+    oled.text(f"{local_time[0]}-{local_time[1]:02d}-{local_time[2]:02d}", 10, 50, 1)
     
     # Temperature
-    temp_str = "Temp: {:.1f}C".format(temp)
-    oled.text(temp_str, 10, 70, 1)
+    oled.text(f"Temp: {temp:.1f}C", 10, 70, 1)
     
-    # Alarm status if set
+    # Alarm status
     if ALARM_DATETIME:
-        alarm_str = "Alarm: {:02d}:{:02d}".format(ALARM_DATETIME[3], ALARM_DATETIME[4])
+        alarm_str = f"Alarm: {ALARM_DATETIME[3]:02d}:{ALARM_DATETIME[4]:02d}"
         oled.text(alarm_str, 10, 90, 1)
         if REPEAT_DAILY:
             oled.text("(Daily)", 80, 90, 1)
     
     oled.show()
 
-# Main Program
+# ===== MAIN PROGRAM =====
 def main():
-    connect_wifi()
-    ntptime.settime()
+    # Initial display test
+    oled.fill(0)
+    oled.text("Starting...", 10, 10, 1)
+    oled.show()
     
-    if not test_http_connection():
-        print("HTTP test failed")
+    # Connect to WiFi
+    try:
+        connect_wifi()
+        ntptime.settime()
+        print("Time synchronized")
+    except Exception as e:
+        print("WiFi/NTP failed:", e)
         oled.fill(0)
-        oled.text("HTTP Failed", 10, 30, 1)
+        oled.text("WiFi Error", 10, 30, 1)
         oled.show()
         return
     
-    print("System starting...")
+    if not test_http_connection():
+        oled.fill(0)
+        oled.text("HTTP Failed", 10, 50, 1)
+        oled.show()
+        return
+    
+    # Get alarm time
+    global ALARM_DATETIME, REPEAT_DAILY, TEMPO
+    ALARM_DATETIME, REPEAT_DAILY, TEMPO = get_alarm_time()
+    
+    print("System running...")
     last_sent_minute = -1
     
     while True:
@@ -300,25 +263,27 @@ def main():
             current_minute = local_time[4]
             temp = read_temperature()
             
-            # Update display every second
+            # Update display
             display_clock()
             
-            # Original HTTP logic
+            # Send data to Ubidots once per minute
             if current_minute != last_sent_minute:
                 if send_http_to_ubidots(temp):
                     last_sent_minute = current_minute
             
-            # Original alarm logic
+            # Check alarm
             if check_alarm(local_time):
                 play_tune(MELODY, TEMPO)
                 if not REPEAT_DAILY:
-                    ALARM_DATETIME = None
+                    ALARM_DATETIME = None  # Disable one-time alarm
             
-            sleep(0.5)  # Faster update for smoother clock
+            sleep(0.5)
             
         except Exception as e:
             print("Error:", e)
             buzzer.duty_u16(0)
             sleep(5)
 
-main()
+# Start program
+if __name__ == "__main__":
+    main()

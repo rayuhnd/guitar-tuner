@@ -11,7 +11,7 @@ import framebuf
 
 # ===== WORKING SH1107 DRIVER =====
 class SH1107:
-    def __init__(self, width=128, height=128, i2c=None, addr=0x3C):
+    def __init__(self, width=128, height=128, i2c=None, addr=0x3C, flip=False):
         self.width = width
         self.height = height
         self.pages = height // 8
@@ -20,15 +20,43 @@ class SH1107:
         self.buffer = bytearray(self.pages * width)
         self.framebuf = framebuf.FrameBuffer(self.buffer, width, height, framebuf.MONO_VLSB)
         
-        # Initialize display
+        # Init commands for 128x128 SH1107
         self.init_cmds = bytes([
-            0xAE, 0x00, 0x10, 0x40, 0x81, 0xCF, 0xA1, 0xC8,
-            0xA6, 0xA8, 0x3F, 0xD3, 0x00, 0xD5, 0x80, 0xD9,
-            0xF1, 0xDA, 0x12, 0xDB, 0x40, 0x20, 0x00, 0x8D,
-            0x14, 0xA4, 0xA6, 0xAF
+            0xAE,       # Display OFF
+            0x02,       # Lower column address
+            0x10,       # Higher column address
+            0xB0,       # Page address
+            0xDC, 0x00, # Display start line
+            0x81, 0x80, # Contrast control (adjustable)
+            0xA0,       # Segment remap (normal)
+            0xC0,       # COM output scan direction (normal)
+            0xA6,       # Normal display (not inverted)
+            0xA8, 0x7F, # Multiplex ratio (128 rows)
+            0xD3, 0x60, # Display offset
+            0xD5, 0x51, # Display clock divide ratio/oscillator frequency
+            0xD9, 0x22, # Pre-charge period
+            0xDA, 0x12, # COM pins hardware configuration
+            0xDB, 0x35, # VCOMH deselect level
+            0x40,       # Display start line
+            0xA4,       # Entire display ON (follow RAM)
+            0xA6,       # Normal display (not inverted)
+            0xAF        # Display ON
         ])
+        
+        if flip:  # Flip the display if requested
+            self.init_cmds = bytes([
+                0xAE, 0x02, 0x10, 0xB0, 0xDC, 0x00, 0x81, 0x80,
+                0xA1,  # Segment remap (flipped horizontally)
+                0xC8,  # COM output scan direction (flipped vertically)
+                0xA6, 0xA8, 0x7F, 0xD3, 0x60, 0xD5, 0x51,
+                0xD9, 0x22, 0xDA, 0x12, 0xDB, 0x35,
+                0x40, 0xA4, 0xA6, 0xAF
+            ])
+        
+        # Send initialization commands
         for cmd in self.init_cmds:
             self.write_cmd(cmd)
+        
         self.fill(0)
         self.show()
 
@@ -46,9 +74,9 @@ class SH1107:
 
     def show(self):
         for page in range(self.pages):
-            self.write_cmd(0xB0 + page)
-            self.write_cmd(0x00)
-            self.write_cmd(0x10)
+            self.write_cmd(0xB0 | page)  # Set page address
+            self.write_cmd(0x02)         # Lower column address
+            self.write_cmd(0x10)         # Higher column address
             self.write_data(self.buffer[page * self.width:(page + 1) * self.width])
 
 # ===== HARDWARE SETUP =====
@@ -81,7 +109,7 @@ def send_http_to_ubidots(value):
     try:
         response = urequests.post(url, json=data, headers=headers)
         if response.status_code == 200:
-            print(f"HTTP Sent {value}°C to Ubidots")
+            print(f"HTTP Sent {value} Degrees Celsius to Ubidots")
         else:
             print(f"HTTP Error {response.status_code}: {response.text}")
         response.close()
@@ -93,10 +121,10 @@ def send_http_to_ubidots(value):
 def test_http_connection():
     print("\nTesting HTTP Connection...")
     if send_http_to_ubidots(25.5):
-        print("✓ HTTP Test Successful")
+        print("HTTP Test Successful")
         return True
     else:
-        print("✗ HTTP Test Failed")
+        print("HTTP Test Failed")
         return False
 
 # ===== ALARM CONFIG =====
@@ -184,7 +212,7 @@ def check_alarm(current_time):
         last_alarm_trigger = current_minute
         temp = read_temperature()
         print(f"\nALARM! {current_time[0]}-{current_time[1]:02d}-{current_time[2]:02d}")
-        print(f"Time: {current_time[3]:02d}:{current_time[4]:02d} | Temp: {temp}°C")
+        print(f"Time: {current_time[3]:02d}:{current_time[4]:02d} | Temp: {temp} Degrees Celsius.")
         return True
     return False
 
@@ -201,35 +229,31 @@ def connect_wifi():
 
 # ===== DISPLAY FUNCTION =====
 def display_clock():
-    """Update OLED display with time, date, temp, and alarm status"""
     local_time = get_local_time()
     temp = read_temperature()
     
-    oled.fill(0)
+    oled.fill(0)  # Clear display
     
-    # Time (HH:MM:SS)
-    oled.text(f"{local_time[3]:02d}:{local_time[4]:02d}:{local_time[5]:02d}", 10, 30, 1)
+    # Time (HH:MM:SS) - Adjust (x, y) to move
+    oled.text(f"{local_time[3]:02d}:{local_time[4]:02d}:{local_time[5]:02d}", -1, 30, 1)  # Moved to (20, 10)
     
-    # Date (YYYY-MM-DD)
-    oled.text(f"{local_time[0]}-{local_time[1]:02d}-{local_time[2]:02d}", 10, 50, 1)
+    # Date (YYYY-MM-DD) - Adjust (x, y)
+    oled.text(f"{local_time[0]}-{local_time[1]:02d}-{local_time[2]:02d}", -1, 40, 1)  # Moved to (15, 30)
     
-    # Temperature
-    oled.text(f"Temp: {temp:.1f}C", 10, 70, 1)
+    # Temperature - Adjust (x, y)
+    oled.text(f"Temperature:", -1, 50, 1)  # Moved to (25, 50)
+    oled.text(f"{temp:.1f}", -1, 60, 1)
+    oled.text(f"Degrees", -1,70, 1)
+    oled.text(f"Celsius", -1, 80, 1)
     
-    # Alarm status
-    if ALARM_DATETIME:
-        alarm_str = f"Alarm: {ALARM_DATETIME[3]:02d}:{ALARM_DATETIME[4]:02d}"
-        oled.text(alarm_str, 10, 90, 1)
-        if REPEAT_DAILY:
-            oled.text("(Daily)", 80, 90, 1)
-    
+    # Alarm status - Adjust (x, y)
     oled.show()
 
 # ===== MAIN PROGRAM =====
 def main():
     # Initial display test
     oled.fill(0)
-    oled.text("Starting...", 10, 10, 1)
+    oled.text("Starting...", -1, 30, 1)
     oled.show()
     
     # Connect to WiFi
@@ -240,13 +264,13 @@ def main():
     except Exception as e:
         print("WiFi/NTP failed:", e)
         oled.fill(0)
-        oled.text("WiFi Error", 10, 30, 1)
+        oled.text("WiFi Error", -1, 30, 1)
         oled.show()
         return
     
     if not test_http_connection():
         oled.fill(0)
-        oled.text("HTTP Failed", 10, 50, 1)
+        oled.text("HTTP Failed", -1, 50, 1)
         oled.show()
         return
     

@@ -171,10 +171,17 @@ def get_local_time():
 
 # ===== SENSOR FUNCTIONS =====
 def read_temperature():
-    """Read temperature from ADC"""
     adc_value = adc.read_u16()
     voltage = (adc_value / 65535) * 3.3
-    return round((voltage - 0.5) / 0.01, 1)
+    
+    # MCP9700 formula: Temp (°C) = (Vout - 0.5) / 0.01
+    temp = (voltage - 0.5) / 0.01
+    
+    # Add calibration offset
+    calibration_offset = -1.0  # Subtract 1 degree to match reference thermometer
+    calibrated_temp = temp + calibration_offset
+    
+    return round(calibrated_temp, 1)
 
 # ===== ALARM FUNCTIONS =====
 def play_tune(melody, tempo):

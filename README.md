@@ -71,11 +71,12 @@ Pymakr needs Node.js to work, you can download it from their website.
 ### Micropython firmware
 To use Raspberry Pi Pico WH and upload micropython files from your computer, you need to update its firmware. The micropython firmware can be downloaded from this website. Follow the installation instructions.
 
-### Putting everything together
-<img src="https://github.com/rayuhnd/temp-alarm/blob/main/wiring_diagram.png?raw=true" alt="wiring_diagram" style="width:50%;"/>
+# Putting everything together
+<img src="https://github.com/rayuhnd/temp-alarm/blob/main/wokwi.jpg?raw=true" alt="wiring_diagram" style="width:50%;"/>
+
 This wiring diagram shows how to connect all components to the Raspberry Pi Pico WH. Note that the MCP9700 connects to an analog input pin, while the OLED uses I2C communication.
 
-## The Code
+### The Code
 The system uses a simple state machine to manage temperature reading, display updates, and alarm checking. Here are the key components:
 
 ### Temperature Reading
@@ -86,37 +87,101 @@ def read_temperature():
     voltage = (adc_value / 65535) * 3.3
     return round((voltage - 0.5) / 0.01, 1)
 ```
-### Alarm Setting
+### Alarm Settings
 
 ```python
-def set_alarm():
-    global ALARM_TIME
-    ALARM_TIME = (int(input("Enter alarm hour (0-23): ")), 
-                 int(input("Enter alarm minute (0-59): ")))
+get_alarm_time():
+    """Get alarm time from user input"""
+    global ALARM_DATETIME, REPEAT_DAILY, TEMPO
+    print("Example: 2023,12,25,7,30 for Dec 25 2023 at 7:30 AM")
+    
+    while True:
+        try:
+            inp = input("Enter alarm time (year,month,day,hour,minute): ")
+            year, month, day, hour, minute = map(int, inp.split(','))
+            
+            REPEAT_DAILY = input("Repeat daily? (y/n): ").lower() == 'y'
+            
+            while True:
+                try:
+                    TEMPO = float(input("Tempo (0.1-1.0, 1.0=normal): "))
+                    if 0.1 <= TEMPO <= 1.0: break
+                    print("Please enter 0.1 to 1.0")
+                except ValueError:
+                    print("Enter a number")
+            
+            return (year, month, day, hour, minute), REPEAT_DAILY, TEMPO
+            
+        except (ValueError, IndexError):
+            print("Error: Enter exactly 5 numbers separated by commas")
 ```
 
 ### Main Loop
 
 ```python
-while True:
-    current_time = utime.localtime()
-    temp = read_temperature()
+def main():
+    # Initial display test
+    oled.fill(0)
+    oled.text("Starting...", -1, 30, 1)
+    oled.show()
     
-    # Check for button press to set alarm
-    if button.value() == 0:
-        set_alarm()
-        
-    # Check if alarm should trigger
-    if check_alarm(current_time):
-        trigger_buzzer()
-        
-    # Update display
-    display_info(temp, current_time)
-    utime.sleep(1)
+    # Connect to WiFi
+    try:
+        connect_wifi()
+        ntptime.settime()
+        print("Time synchronized")
+    except Exception as e:
+        print("WiFi/NTP failed:", e)
+        oled.fill(0)
+        oled.text("WiFi Error", -1, 30, 1)
+        oled.show()
+        return
+    
+    if not test_http_connection():
+        oled.fill(0)
+        oled.text("HTTP Failed", -1, 50, 1)
+        oled.show()
+        return
+    
+    # Get alarm time
+    global ALARM_DATETIME, REPEAT_DAILY, TEMPO
+    ALARM_DATETIME, REPEAT_DAILY, TEMPO = get_alarm_time()
+    
+    print("System running...")
+    last_sent_minute = -1
+    
+    while True:
+        try:
+            local_time = get_local_time()
+            current_minute = local_time[4]
+            temp = read_temperature()
+            
+            # Update display
+            display_clock()
+            
+            # Send data to Ubidots once per minute
+            if current_minute != last_sent_minute:
+                if send_http_to_ubidots(temp):
+                    last_sent_minute = current_minute
+            
+            # Check alarm
+            if check_alarm(local_time):
+                play_tune(MELODY, TEMPO)
+                if not REPEAT_DAILY:
+                    ALARM_DATETIME = None  # Disable one-time alarm
+            
+            sleep(0.5)
+            
+        except Exception as e:
+            print("Error:", e)
+            buzzer.duty_u16(0)
+            sleep(5)
+
+main()
 
 ```
 
-### How It Works
+# How It Works
 
 1. Continuously measures temperature every second
 
@@ -128,7 +193,7 @@ while True:
 
 5. Automatically clears alarm after triggering
 
-### Future Improvements 
+# Future Improvements 
 
 1. Implement buttons
 
@@ -139,3 +204,10 @@ while True:
 4. Battery power optimization
 
 5. Implement temperature threshold alerts
+
+# Final Design
+
+Here is the completed temperature alarm system:
+
+<img src="https://github.com/rayuhnd/temp-alarm/blob/main/final%20design.jpeg?raw=true" alt="final_design" style="width:100%;"/>
+While simple, this project effectively demonstrates core embedded systems concepts and could be expanded in numerous ways. The clean form factor makes it suitable for various monitoring applications (Note that OLED screen shown in the image above is rendering - not broken).

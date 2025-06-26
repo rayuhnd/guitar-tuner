@@ -129,7 +129,6 @@ def test_http_connection():
 
 # Alarm Config
 def get_alarm_time():
-    """Get alarm time from user input"""
     global ALARM_DATETIME, REPEAT_DAILY, TEMPO
     print("Example: 2023,12,25,7,30 for Dec 25 2023 at 7:30 AM")
     
@@ -155,7 +154,7 @@ def get_alarm_time():
 
 # Summer Time
 def is_summer_time(now):
-    """Check if DST is active (Sweden)"""
+
     year, month = now[0], now[1]
     if 3 < month < 10: return True
     if month == 3 and now[2] >= (31 - (5 * year + 4) // 7 % 7): return True
@@ -163,7 +162,7 @@ def is_summer_time(now):
     return False
 
 def get_local_time():
-    """Get local time with DST adjustment"""
+
     now_utc = utime.localtime()
     offset = 2 if is_summer_time(now_utc) else 1  # CEST or CET
     adjusted = utime.mktime(now_utc) + offset * 3600
@@ -185,7 +184,7 @@ def read_temperature():
 
 # Tune Functions
 def play_tune(melody, tempo):
-    """Play melody with adjustable tempo"""
+   
     for note_info in melody:
         note = note_info[1]
         duration = note_info[2]
@@ -199,7 +198,7 @@ def play_tune(melody, tempo):
     buzzer.duty_u16(0)
 
 def check_alarm(current_time):
-    """Check if alarm should trigger"""
+
     global last_alarm_trigger
     
     if ALARM_DATETIME is None:

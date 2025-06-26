@@ -308,6 +308,4 @@ def main():
             buzzer.duty_u16(0)
             sleep(5)
 
-# Start program
-if __name__ == "__main__":
-    main()
+main()

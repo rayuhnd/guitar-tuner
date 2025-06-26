@@ -178,7 +178,7 @@ def read_temperature():
     temp = (voltage - 0.5) / 0.01
     
     # Added calibration offset
-    calibration_offset = -1.0  # Subtract 1 degree to match reference thermometer
+    calibration_offset = -2.0  # Subtract 2 degree to match reference thermometer
     calibrated_temp = temp + calibration_offset
     
     return round(calibrated_temp, 1)

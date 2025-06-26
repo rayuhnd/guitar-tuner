@@ -9,7 +9,7 @@ import ujson # type: ignore
 import urequests # type: ignore
 import framebuf # type: ignore
 
-# ===== WORKING SH1107 DRIVER =====
+# SH1107 driver
 class SH1107:
     def __init__(self, width=128, height=128, i2c=None, addr=0x3C, flip=False):
         self.width = width
@@ -79,7 +79,7 @@ class SH1107:
             self.write_cmd(0x10)         # Higher column address
             self.write_data(self.buffer[page * self.width:(page + 1) * self.width])
 
-# ===== HARDWARE SETUP =====
+# Hardware setup
 i2c = I2C(0, scl=Pin(17), sda=Pin(16), freq=400000)
 oled = SH1107(128, 128, i2c)  # Initialize display
 
@@ -87,20 +87,20 @@ adc = ADC(Pin(26))  # Temperature sensor
 buzzer = PWM(Pin(18))       
 buzzer.duty_u16(0)  # Start with buzzer off
 
-# ===== NETWORK CONFIG =====
+# Network Config
 WIFI_SSID = "Google Björkgatan"
 WIFI_PASSWORD = "wash@xidi"
 UBIDOTS_TOKEN = "BBUS-BfEl1dInwuzIz8Ir5s9b3TFBg0VI1R"
 DEVICE_LABEL = "raspberrypi"
 VARIABLE_LABEL = "new-variable-2"
 
-# ===== GLOBAL VARIABLES =====
+# Global Variables
 ALARM_DATETIME = None
 REPEAT_DAILY = False
 TEMPO = 1.0
 last_alarm_trigger = None
 
-# ===== HTTP FUNCTIONS =====
+# HTTP
 def send_http_to_ubidots(value):
     url = f"http://industrial.api.ubidots.com/api/v1.6/devices/{DEVICE_LABEL}"
     headers = {"X-Auth-Token": UBIDOTS_TOKEN, "Content-Type": "application/json"}
@@ -127,7 +127,7 @@ def test_http_connection():
         print("HTTP Test Failed")
         return False
 
-# ===== ALARM CONFIG =====
+# Alarm Config
 def get_alarm_time():
     """Get alarm time from user input"""
     global ALARM_DATETIME, REPEAT_DAILY, TEMPO
@@ -153,7 +153,7 @@ def get_alarm_time():
         except (ValueError, IndexError):
             print("Error: Enter exactly 5 numbers separated by commas")
 
-# ===== TIME FUNCTIONS =====
+# Summer Time
 def is_summer_time(now):
     """Check if DST is active (Sweden)"""
     year, month = now[0], now[1]
@@ -169,7 +169,7 @@ def get_local_time():
     adjusted = utime.mktime(now_utc) + offset * 3600
     return utime.localtime(adjusted)
 
-# ===== SENSOR FUNCTIONS =====
+# Sensor Functions
 def read_temperature():
     adc_value = adc.read_u16()
     voltage = (adc_value / 65535) * 3.3
@@ -177,13 +177,13 @@ def read_temperature():
     # MCP9700 formula: Temp (°C) = (Vout - 0.5) / 0.01
     temp = (voltage - 0.5) / 0.01
     
-    # Add calibration offset
+    # Added calibration offset
     calibration_offset = -1.0  # Subtract 1 degree to match reference thermometer
     calibrated_temp = temp + calibration_offset
     
     return round(calibrated_temp, 1)
 
-# ===== ALARM FUNCTIONS =====
+# Tune Functions
 def play_tune(melody, tempo):
     """Play melody with adjustable tempo"""
     for note_info in melody:
@@ -234,29 +234,26 @@ def connect_wifi():
         utime.sleep(1)
     raise RuntimeError("WiFi failed")
 
-# ===== DISPLAY FUNCTION =====
+# Display Function
 def display_clock():
     local_time = get_local_time()
     temp = read_temperature()
     
     oled.fill(0)  # Clear display
     
-    # Time (HH:MM:SS) - Adjust (x, y) to move
-    oled.text(f"{local_time[3]:02d}:{local_time[4]:02d}:{local_time[5]:02d}", -1, 30, 1)  # Moved to (20, 10)
     
-    # Date (YYYY-MM-DD) - Adjust (x, y)
-    oled.text(f"{local_time[0]}-{local_time[1]:02d}-{local_time[2]:02d}", -1, 40, 1)  # Moved to (15, 30)
+    oled.text(f"{local_time[3]:02d}:{local_time[4]:02d}:{local_time[5]:02d}", -1, 30, 1)  
+  
+    oled.text(f"{local_time[0]}-{local_time[1]:02d}-{local_time[2]:02d}", -1, 40, 1)  
     
-    # Temperature - Adjust (x, y)
-    oled.text(f"Temperature:", -1, 50, 1)  # Moved to (25, 50)
+    oled.text(f"Temperature:", -1, 50, 1)  
     oled.text(f"{temp:.1f}", -1, 60, 1)
     oled.text(f"Degrees", -1,70, 1)
     oled.text(f"Celsius", -1, 80, 1)
     
-    # Alarm status - Adjust (x, y)
     oled.show()
 
-# ===== MAIN PROGRAM =====
+# Main
 def main():
     # Initial display test
     oled.fill(0)

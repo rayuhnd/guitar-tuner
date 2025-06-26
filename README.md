@@ -74,7 +74,7 @@ To use Raspberry Pi Pico WH and upload micropython files from your computer, you
 # Putting everything together
 <img src="https://github.com/rayuhnd/temp-alarm/blob/main/wokwi.jpg?raw=true" alt="wiring_diagram" style="width:50%;"/>
 
-This wiring diagram shows how to connect all components to the Raspberry Pi Pico WH. Note that the MCP9700 connects to an analog input pin, while the OLED uses I2C communication.
+This wiring diagram shows how to connect all components to the Raspberry Pi Pico WH. Note that the MCP9700 connects to an analog input pin (3V3(OUT)), while the OLED uses I2C communication.
 
 ### The Code
 The system uses a simple state machine to manage temperature reading, display updates, and alarm checking. Here are the key components:

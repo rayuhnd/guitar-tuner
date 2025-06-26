@@ -94,3 +94,48 @@ def set_alarm():
     ALARM_TIME = (int(input("Enter alarm hour (0-23): ")), 
                  int(input("Enter alarm minute (0-59): ")))
 ```
+
+### Main Loop
+
+```python
+while True:
+    current_time = utime.localtime()
+    temp = read_temperature()
+    
+    # Check for button press to set alarm
+    if button.value() == 0:
+        set_alarm()
+        
+    # Check if alarm should trigger
+    if check_alarm(current_time):
+        trigger_buzzer()
+        
+    # Update display
+    display_info(temp, current_time)
+    utime.sleep(1)
+
+```
+
+### How It Works
+
+1. Continuously measures temperature every second
+
+2. Displays current temperature and time on OLED
+
+3. Allows setting alarms
+
+4. Triggers buzzer when alarm time matches current time
+
+5. Automatically clears alarm after triggering
+
+### Future Improvements 
+
+1. Implement buttons
+
+2. Add snooze functionality
+
+3. Add WiFi connectivity for remote monitoring
+
+4. Battery power optimization
+
+5. Implement temperature threshold alerts

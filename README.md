@@ -40,7 +40,7 @@ Key specifications:
 <img src="https://github.com/gnowin/iot-project/assets/100692493/f471fdd4-94a1-4c5e-bd69-ecc444c994b7" alt="pico" style="width:50%;"/>
 
 ### MCP9700 TO-92  
-A sensor that measures both humidity and temperature.
+A sensor that measures temperature.
 
 Technical details:
 - Operating voltage: 3.1V to 5.5V

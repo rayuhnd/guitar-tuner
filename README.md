@@ -243,7 +243,7 @@ main()
 3. Allows setting alarms through serial interface with validation
 4. Triggers buzzer when alarm time matches current time
 5. Automatically clears alarm after triggering 
-6. Optional WiFi connectivity for NTP time sync and data logging
+6. Optional WiFi connectivity for NTP time sync and data logging (Ubidots)
 
 System states:
 - Initialization: Sets up hardware and connections

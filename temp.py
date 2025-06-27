@@ -128,7 +128,7 @@ def test_http_connection():
 
 # Alarm Config
 def get_alarm_time():
-    global ALARM_DATETIME, REPEAT_DAILY, TEMPO
+    global ALARM_DATETIME, TEMPO
     print("Example: 2023,12,25,7,30 for Dec 25 2023 at 7:30 AM")
     
     while True:

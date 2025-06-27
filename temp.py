@@ -300,8 +300,6 @@ def main():
             # Check alarm
             if check_alarm(local_time):
                 play_tune(MELODY, TEMPO)
-                if not REPEAT_DAILY:
-                    ALARM_DATETIME = None  # Disable one-time alarm
             
             sleep(0.5)
             

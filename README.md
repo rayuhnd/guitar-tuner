@@ -272,10 +272,11 @@ def connect_wifi():
 
 ## Presenting the Data  
 ### OLED Display Output
+```
 - Current time (HH:MM:SS format)
 - Date display (YYYY-MM-DD)
 - Temperature reading (°C)
-
+```
 ### Serial Monitor Output
 ```
 Time: 14:30:45

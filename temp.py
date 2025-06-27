@@ -96,7 +96,6 @@ VARIABLE_LABEL = "new-variable-2"
 
 # Global Variables
 ALARM_DATETIME = None
-REPEAT_DAILY = False
 TEMPO = 1.0
 last_alarm_trigger = None
 
@@ -137,7 +136,7 @@ def get_alarm_time():
             inp = input("Enter alarm time (year,month,day,hour,minute): ")
             year, month, day, hour, minute = map(int, inp.split(','))
             
-            REPEAT_DAILY = input("Repeat daily? (y/n): ").lower() == 'y'
+            
             
             while True:
                 try:
@@ -147,7 +146,7 @@ def get_alarm_time():
                 except ValueError:
                     print("Enter a number")
             
-            return (year, month, day, hour, minute), REPEAT_DAILY, TEMPO
+            return (year, month, day, hour, minute), TEMPO
             
         except (ValueError, IndexError):
             print("Error: Enter exactly 5 numbers separated by commas")
@@ -278,8 +277,8 @@ def main():
         return
     
     # Get alarm time
-    global ALARM_DATETIME, REPEAT_DAILY, TEMPO
-    ALARM_DATETIME, REPEAT_DAILY, TEMPO = get_alarm_time()
+    global ALARM_DATETIME, TEMPO
+    ALARM_DATETIME, TEMPO = get_alarm_time()
     
     print("System running...")
     last_sent_minute = -1

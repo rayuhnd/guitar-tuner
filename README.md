@@ -142,7 +142,15 @@ The code reads the analog voltage from the sensor and converts it to temperature
 def read_temperature():
     adc_value = adc.read_u16()
     voltage = (adc_value / 65535) * 3.3
-    return round((voltage - 0.5) / 0.01, 1)
+    
+    # MCP9700 formula: Temp (°C) = (Vout - 0.5) / 0.01
+    temp = (voltage - 0.5) / 0.01
+    
+    # Added calibration offset
+    calibration_offset = -2.0  # Subtract 2 degree to match reference thermometer
+    calibrated_temp = temp + calibration_offset
+    
+    return round(calibrated_temp, 1)
 ```
 
 ### Alarm Settings  

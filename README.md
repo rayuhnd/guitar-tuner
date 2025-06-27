@@ -210,4 +210,4 @@ main()
 Here is the completed temperature alarm system:
 
 <img src="https://github.com/rayuhnd/temp-alarm/blob/main/final%20design.jpeg?raw=true" alt="final_design" style="width:100%;"/>
-While simple, this project effectively demonstrates core embedded systems concepts and could be expanded in numerous ways. The clean form factor makes it suitable for various monitoring applications (Note that OLED screen shown in the image above is rendering - not broken).
+While simple, this project effectively demonstrates core embedded systems concepts and could be expanded in numerous ways. The clean form factor makes it suitable for various monitoring applications (Note that the OLED screen shown in the image above is rendering - not broken).

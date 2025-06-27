@@ -11,7 +11,7 @@ As someone who needs to monitor temperature in various settings, I wanted a simp
 The system is self-contained and battery-friendly. While this prototype focuses on local functionality, IoT features like remote monitoring could easily be added in future versions. Key features include:
 - Accurate temperature monitoring (±2°C after calibration)
 - Visual display of current time and temperature
-- Configurable alarm times with daily repeat option
+- Configurable alarm times 
 - Audible alarm notification
 - Optional WiFi connectivity for data logging
 
@@ -151,15 +151,13 @@ User-friendly input for setting alarms with validation:
 ```python
 get_alarm_time():
     """Get alarm time from user input"""
-    global ALARM_DATETIME, REPEAT_DAILY, TEMPO
+    global ALARM_DATETIME, TEMPO
     print("Example: 2023,12,25,7,30 for Dec 25 2023 at 7:30 AM")
     
     while True:
         try:
             inp = input("Enter alarm time (year,month,day,hour,minute): ")
             year, month, day, hour, minute = map(int, inp.split(','))
-            
-            REPEAT_DAILY = input("Repeat daily? (y/n): ").lower() == 'y'
             
             while True:
                 try:
@@ -169,7 +167,7 @@ get_alarm_time():
                 except ValueError:
                     print("Enter a number")
             
-            return (year, month, day, hour, minute), REPEAT_DAILY, TEMPO
+            return (year, month, day, hour, minute), TEMPO
             
         except (ValueError, IndexError):
             print("Error: Enter exactly 5 numbers separated by commas")
@@ -204,8 +202,8 @@ def main():
         return
     
     # Get alarm time
-    global ALARM_DATETIME, REPEAT_DAILY, TEMPO
-    ALARM_DATETIME, REPEAT_DAILY, TEMPO = get_alarm_time()
+    global ALARM_DATETIME, TEMPO
+    ALARM_DATETIME, TEMPO = get_alarm_time()
     
     print("System running...")
     last_sent_minute = -1
@@ -227,9 +225,7 @@ def main():
             # Check alarm
             if check_alarm(local_time):
                 play_tune(MELODY, TEMPO)
-                if not REPEAT_DAILY:
-                    ALARM_DATETIME = None  # Disable one-time alarm
-            
+
             sleep(0.5)
             
         except Exception as e:
@@ -246,7 +242,7 @@ main()
 2. Displays current temperature and time on OLED with clear formatting
 3. Allows setting alarms through serial interface with validation
 4. Triggers buzzer when alarm time matches current time
-5. Automatically clears alarm after triggering (unless set to repeat)
+5. Automatically clears alarm after triggering 
 6. Optional WiFi connectivity for NTP time sync and data logging
 
 System states:

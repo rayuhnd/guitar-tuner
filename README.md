@@ -244,6 +244,45 @@ def main():
 main()
 ```
 
+## Transmitting the Data / Connectivity  
+### WiFi Configuration
+```python
+WIFI_SSID = "YourNetwork"
+WIFI_PASSWORD = "YourPassword"
+```
+
+### Data Transmission
+```python
+def send_http_to_ubidots(value):
+    url = f"http://industrial.api.ubidots.com/api/v1.6/devices/{DEVICE_LABEL}"
+    headers = {"X-Auth-Token": UBIDOTS_TOKEN}
+    data = {VARIABLE_LABEL: value}
+    response = urequests.post(url, json=data, headers=headers)
+    response.close()
+```
+
+### Time Synchronization
+```python
+def connect_wifi():
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    wlan.connect(WIFI_SSID, WIFI_PASSWORD)
+    ntptime.settime()
+```
+
+## Presenting the Data  
+### OLED Display Output
+- Current time (HH:MM:SS format)
+- Date display (YYYY-MM-DD)
+- Temperature reading (°C)
+
+### Serial Monitor Output
+```
+Time: 14:30:45
+Date: 2025-06-26 
+Temperature: 23.5°C
+```
+
 # How It Works  
 
 1. Continuously measures temperature every second using the MCP9700 sensor

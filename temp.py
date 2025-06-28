@@ -88,9 +88,9 @@ buzzer = PWM(Pin(18))
 buzzer.duty_u16(0)  # Start with buzzer off
 
 # Network Config
-WIFI_SSID = "Institutet 2-2"
-WIFI_PASSWORD = "9A66B40F33"
-UBIDOTS_TOKEN = "BBUS-BfEl1dInwuzIz8Ir5s9b3TFBg0VI1R"
+WIFI_SSID = "Institutet 2-2" # Enter SSID
+WIFI_PASSWORD = "9A66B40F33" # Enter WIFI Password
+UBIDOTS_TOKEN = "BBUS-BfEl1dInwuzIz8Ir5s9b3TFBg0VI1R" 
 DEVICE_LABEL = "raspberrypi"
 VARIABLE_LABEL = "new-variable-2"
 

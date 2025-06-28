@@ -88,11 +88,11 @@ buzzer = PWM(Pin(18))
 buzzer.duty_u16(0)  # Start with buzzer off
 
 # Network Config
-WIFI_SSID = "Google Björkgatan"
-WIFI_PASSWORD = "wash@xidi"
-UBIDOTS_TOKEN = "BBUS-BfEl1dInwuzIz8Ir5s9b3TFBg0VI1R"
-DEVICE_LABEL = "raspberrypi"
-VARIABLE_LABEL = "new-variable-2"
+WIFI_SSID = "EnterSSID"
+WIFI_PASSWORD = "EnterPassword"
+UBIDOTS_TOKEN = "BBUS-XXXX"
+DEVICE_LABEL = "---"
+VARIABLE_LABEL = "---"
 
 # Global Variables
 ALARM_DATETIME = None

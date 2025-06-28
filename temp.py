@@ -88,8 +88,8 @@ buzzer = PWM(Pin(18))
 buzzer.duty_u16(0)  # Start with buzzer off
 
 # Network Config
-WIFI_SSID = "Google Björkgatan"
-WIFI_PASSWORD = "wash@xidi"
+WIFI_SSID = "Institutet 2-2"
+WIFI_PASSWORD = "9A66B40F33"
 UBIDOTS_TOKEN = "BBUS-BfEl1dInwuzIz8Ir5s9b3TFBg0VI1R"
 DEVICE_LABEL = "raspberrypi"
 VARIABLE_LABEL = "new-variable-2"
@@ -136,8 +136,6 @@ def get_alarm_time():
             inp = input("Enter alarm time (year,month,day,hour,minute): ")
             year, month, day, hour, minute = map(int, inp.split(','))
             
-            
-            
             while True:
                 try:
                     TEMPO = float(input("Tempo (0.1-1.0, 1.0=normal): "))
@@ -153,7 +151,6 @@ def get_alarm_time():
 
 # Summer Time
 def is_summer_time(now):
-
     year, month = now[0], now[1]
     if 3 < month < 10: return True
     if month == 3 and now[2] >= (31 - (5 * year + 4) // 7 % 7): return True
@@ -161,7 +158,6 @@ def is_summer_time(now):
     return False
 
 def get_local_time():
-
     now_utc = utime.localtime()
     offset = 2 if is_summer_time(now_utc) else 1  # CEST or CET
     adjusted = utime.mktime(now_utc) + offset * 3600
@@ -183,7 +179,6 @@ def read_temperature():
 
 # Tune Functions
 def play_tune(melody, tempo):
-   
     for note_info in melody:
         note = note_info[1]
         duration = note_info[2]
@@ -197,7 +192,6 @@ def play_tune(melody, tempo):
     buzzer.duty_u16(0)
 
 def check_alarm(current_time):
-
     global last_alarm_trigger
     
     if ALARM_DATETIME is None:
@@ -208,10 +202,7 @@ def check_alarm(current_time):
     if last_alarm_trigger == current_minute:
         return False
         
-    if REPEAT_DAILY:
-        alarm_triggered = (current_time[3], current_time[4]) == (ALARM_DATETIME[3], ALARM_DATETIME[4])
-    else:
-        alarm_triggered = current_time[:5] == ALARM_DATETIME[:5]
+    alarm_triggered = current_time[:5] == ALARM_DATETIME[:5]
     
     if alarm_triggered:
         last_alarm_trigger = current_minute
@@ -239,11 +230,8 @@ def display_clock():
     
     oled.fill(0)  # Clear display
     
-    
     oled.text(f"{local_time[3]:02d}:{local_time[4]:02d}:{local_time[5]:02d}", -1, 30, 1)  
-  
     oled.text(f"{local_time[0]}-{local_time[1]:02d}-{local_time[2]:02d}", -1, 40, 1)  
-    
     oled.text(f"Temperature:", -1, 50, 1)  
     oled.text(f"{temp:.1f}", -1, 60, 1)
     oled.text(f"Degrees", -1,70, 1)

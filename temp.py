@@ -88,19 +88,11 @@ buzzer = PWM(Pin(18))
 buzzer.duty_u16(0)  # Start with buzzer off
 
 # Network Config
-<<<<<<< HEAD
 WIFI_SSID = "Institutet 2-2"
 WIFI_PASSWORD = "9A66B40F33"
 UBIDOTS_TOKEN = "BBUS-BfEl1dInwuzIz8Ir5s9b3TFBg0VI1R"
 DEVICE_LABEL = "raspberrypi"
 VARIABLE_LABEL = "new-variable-2"
-=======
-WIFI_SSID = "EnterSSID"
-WIFI_PASSWORD = "EnterPassword"
-UBIDOTS_TOKEN = "BBUS-XXXX"
-DEVICE_LABEL = "---"
-VARIABLE_LABEL = "---"
->>>>>>> d6679bf0cda2f8fc7f323c7751ff9449c74ed3b7
 
 # Global Variables
 ALARM_DATETIME = None
